@@ -1,14 +1,18 @@
-#include <string.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
+#define H 0.01
+
 double ln(double x) {
-  if (x <= 0) {
-    return 0;
+  if (x <= 0.0) {
+    return 0.0;
   }
-  if (x <= 1){
+  else if (x == 1.0){
+    return 0.0;
+  }
+  if (x < 1.0){
     return -ln((double) 1/x);
   }
 
@@ -16,10 +20,6 @@ double ln(double x) {
   double y = 0.0;  // ln(1) = 0
 
   int steps = (int)((x - x0) / H);
-  if (x < 1.0) {
-    steps = (int)((x0 - x) / H);
-    steps = -steps;  // Negative steps for x < 1
-  }
 
   for (int i = 0; i < steps; i++) {
     double k1 = H * (1.0 / x0);
@@ -43,3 +43,6 @@ double ln(double x) {
 
   return y;
 }
+
+
+
