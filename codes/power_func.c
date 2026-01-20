@@ -1,4 +1,3 @@
-#include <string.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,12 +7,12 @@
 #define EULER_CONST 2.718281828459045
 
 double pow(double x, double w) {
-  if (x == 0) return 0;  
-  if (w == 0) return 1;  
-
+  if (x == 0) return 0.0;  
+  if (w == 0) return 1.0;  
+  
+  
   double x0 = 1.0;
-  double y = 1.0;  // y(1) = 1
-
+  double y = 1.0;  
   int steps = (int)((x - x0) / H);
   if (x < 1.0) {
     steps = (int)((x0 - x) / H);

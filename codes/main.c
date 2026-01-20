@@ -28,6 +28,7 @@
 #define COL4 PC1
 #define COL5 PC2
 #define PI 3.14159265358979323846
+#define pi 3.14159265358979323846
 #define H 0.01
 #define EULER_CONST 2.718281828459045
 uint8_t unmatched_brackets = 0;
@@ -56,46 +57,86 @@ double fast_inv_sqrt(double x){
 	return (double) y;
 }
 
-double arctan(double x) {
-    double x0 = 0.0, y = 0.0;
-    int steps = x >= 0 ? (int) (x / H): (int) (-x / H); 
-    double step_dir = (x >= 0) ? 1 : -1;
-    
-    for (int i = 0; i < steps; i++) {
-        double k1 = H / (1 + x0*x0);
-        double k2 = H / (1 + (x0 + H/2)*(x0 + H/2));
-        double k3 = H / (1 + (x0 + H/2)*(x0 + H/2));
-        double k4 = H / (1 + (x0 + H)*(x0 + H));
+double arctan(double x_target) {
+    int sign = 1;
+    if (x_target < 0) {
+        sign = -1;
+        x_target = -x_target; // Make positive
+    }
+
+    if (x_target > 1.0) {
+        double val = arctan(1.0 / x_target); // Recursive call with small number
+        return sign * (PI/2 - val); // result = sign * (PI/2 - val)
+    }
+
+    double x = 0.0;
+    double y = 0.0;
+    double h = 0.01;
+
+    while (x < x_target) {
+        if (x + h > x_target) {
+            h = x_target - x;
+        }
+
         
-        y += step_dir * (k1 + 2*k2 + 2*k3 + k4) / 6;
-        x0 += step_dir * H;
+        double k1 = h / (1.0 + x * x);
+        
+        double x_mid = x + h / 2.0;
+        double k2 = h / (1.0 + x_mid * x_mid);
+        double k3 = h / (1.0 + x_mid * x_mid);
+        
+        double x_end = x + h;
+        double k4 = h / (1.0 + x_end * x_end);
+
+        y += (k1 + 2*k2 + 2*k3 + k4) / 6.0;
+        x += h;
     }
-    
-    return y;
+
+    return sign * y;
 }
-double arcsin(double x) {
-    if (x < -1 || x > 1) return 0;
 
-    double x0 = 0.0, y = 0.0;
-    int steps = x >= 0 ? (int) (x / H): (int) (-x / H); 
-    double step_dir = (x >= 0) ? 1 : -1;
+double arcsin(double x_target) {
+    if (x_target < -1.0 || x_target > 1.0) return 0; 
 
-    for (int i = 0; i < steps; i++) {
-        double k1 = H * fast_inv_sqrt(1 - x0*x0);
-        double k2 = H * fast_inv_sqrt(1 - (x0 + step_dir*H/2)*(x0 + step_dir*H/2));
-        double k3 = H * fast_inv_sqrt(1 - (x0 + step_dir*H/2)*(x0 + step_dir*H/2));
-        double k4 = H * fast_inv_sqrt(1 - (x0 + step_dir*H)*(x0 + step_dir*H));
+    // handling error while division by 0
+    if (x_target >= 0.9999) return PI/2;  
+    if (x_target <= -0.9999) return -1*(PI/2);
 
-        y += step_dir * (k1 + 2*k2 + 2*k3 + k4) / 6;
-        x0 += step_dir * H;
+    double x = 0.0;
+    double y = 0.0;
+    double h = 0.01;
+    
+    int sign = 1;
+    if (x_target < 0) {
+        sign = -1;
+        x_target = -x_target;     }
+
+    
+    while (x < x_target) {
+        
+        if (x + h > x_target) {
+            h = x_target - x;
+        }
+
+        double k1 = h * fast_inv_sqrt(1 - x * x);
+        
+        double x_mid = x + h / 2.0;
+        double k2 = h * fast_inv_sqrt(1 - x_mid * x_mid);
+        double k3 = h * fast_inv_sqrt(1 - x_mid * x_mid);
+        double x_end = x + h;
+        double k4 = h * fast_inv_sqrt(1 - x_end * x_end);
+       
+	y += (k1 + 2*k2 + 2*k3 + k4) / 6.0;
+        x += h;
     }
 
-    return y;
+    return sign * y;
 }
 
 double arccos(double x){
     return ((PI/2) - arcsin(x));
 }
+
 
 /*
 double normalize_angle(double angle) {
@@ -110,76 +151,57 @@ double normalize_angle(double angle) {
 */
 
 double sin(double x_target) {
-  double x, y, z;
+  double h = 0.01;
+  double x = 0.0, y = 0.0, z = 1.0;
   double k1, k2, k3, k4, l1, l2, l3, l4;
   double angle = x_target;
-  int k = (int)(angle / (2*PI));
-    angle -= k * (2*PI);
-    if (angle < 0) angle += (2*PI);
-  x_target = angle;
-
-  x = 0.0;    
-  y = 0.0;    // y(0) = 0
-  z = 1.0;    // y'(0) = 1
+  int k = (int)(angle / (2*pi));
+  angle -= k * (2*pi);
+  if (angle < 0){
+    angle = angle +  (2*pi);
+  }
+  x_target = angle;   
 
   while(x < x_target) {
-    if (x + H > x_target) {
-      double last_h = x_target - x;
+       if(x + h > x_target){
+        h = x_target - x;
+      }
+      k1 = h *  z;
+      l1 = -h * y;
 
-      k1 = last_h * z;
-      l1 = -last_h * y;
+      k2 = h * (z + l1/2);
+      l2 = -(h * (y + k1/2));
 
-      k2 = last_h * z + l1/2;
-      l2 = - (last_h * (y + k1/2));
+      k3 = h * (z + l2/2);
+      l3 = - h * (y + k2/2);
 
-      k3 = last_h * z + l2/2;
-      l3 = - (last_h * (y + k2/2));
-
-      k4 = last_h * z + l3;
-      l4 = -(last_h * (y + k3));
-
-      y = y + (k1 + 2*k2 + 2*k3 + k4)/6;
-      z = z + (l1 + 2*l2 + 2*l3 + l4)/6;
-
-      x = x_target;
-    } else {
-      k1 = H *  z;
-      l1 = -H * y;
-
-      k2 = H * (z + l1/2);
-      l2 = -(H * (y + k1/2));
-
-      k3 = H * (z + l2/2);
-      l3 = - H * (y + k2/2);
-
-      k4 = H * (z + l3);
-      l4 =  -H * (y + k3);
+      k4 = h * (z + l3);
+      l4 =  -h * (y + k3);
 
       y = y + (k1 + 2*k2 + 2*k3 + k4)/6;
       z = z + (l1 + 2*l2 + 2*l3 + l4)/6;
 
-      x = x + H;
-    }
+      x = x + h;
   }
 
   return y;
 }
 
-double cos(double x){
-  return sin(PI/2 - x);
+double cos(double x_target) {
+    return sin(pi/2 - x_target);
 }
 
 double tan(double x){
-  return sin(x) / cos(x);
+	  return sin(x) / cos(x);
 }
 
 double pow(double x, double w) {
-  if (x == 0) return 0;  
-  if (w == 0) return 1;  
-
+  if (x == 0) return 0.0;  
+  if (w == 0) return 1.0;  
+  
+  
   double x0 = 1.0;
-  double y = 1.0;  // y(1) = 1
-
+  double y = 1.0;  
   int steps = (int)((x - x0) / H);
   if (x < 1.0) {
     steps = (int)((x0 - x) / H);
@@ -208,11 +230,16 @@ double pow(double x, double w) {
 
   return y;
 }
+
+
 double ln(double x) {
-  if (x <= 0) {
-    return 0;
+  if (x <= 0.0) {
+    return 0.0;
   }
-  if (x <= 1){
+  else if (x == 1.0){
+    return 0.0;
+  }
+  if (x < 1.0){
     return -ln((double) 1/x);
   }
 
@@ -220,10 +247,6 @@ double ln(double x) {
   double y = 0.0;  // ln(1) = 0
 
   int steps = (int)((x - x0) / H);
-  if (x < 1.0) {
-    steps = (int)((x0 - x) / H);
-    steps = -steps;  // Negative steps for x < 1
-  }
 
   for (int i = 0; i < steps; i++) {
     double k1 = H * (1.0 / x0);

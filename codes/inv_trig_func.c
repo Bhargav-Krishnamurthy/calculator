@@ -2,13 +2,12 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
+
 
 #define PI 3.14159265358979323846
-#define H 0.01
 
 double fast_inv_sqrt(double x){
-    x = (float) x;
+    	x = (float) x;
 	long i;
 	float x2, y;
 	const float threehalfs = 1.5F;
@@ -23,41 +22,81 @@ double fast_inv_sqrt(double x){
 	return (double) y;
 }
 
-double arctan(double x) {
-    double x0 = 0.0, y = 0.0;
-    int steps = x >= 0 ? (int) (x / H): (int) (-x / H); 
-    double step_dir = (x >= 0) ? 1 : -1;
-    
-    for (int i = 0; i < steps; i++) {
-        double k1 = H / (1 + x0*x0);
-        double k2 = H / (1 + (x0 + H/2)*(x0 + H/2));
-        double k3 = H / (1 + (x0 + H/2)*(x0 + H/2));
-        double k4 = H / (1 + (x0 + H)*(x0 + H));
+
+double arctan(double x_target) {
+    int sign = 1;
+    if (x_target < 0) {
+        sign = -1;
+        x_target = -x_target; // Make positive
+    }
+
+    if (x_target > 1.0) {
+        double val = arctan(1.0 / x_target); // Recursive call with small number
+        return sign * (PI/2 - val); // result = sign * (PI/2 - val)
+    }
+
+    double x = 0.0;
+    double y = 0.0;
+    double h = 0.01;
+
+    while (x < x_target) {
+        if (x + h > x_target) {
+            h = x_target - x;
+        }
+
         
-        y += step_dir * (k1 + 2*k2 + 2*k3 + k4) / 6;
-        x0 += step_dir * H;
+        double k1 = h / (1.0 + x * x);
+        
+        double x_mid = x + h / 2.0;
+        double k2 = h / (1.0 + x_mid * x_mid);
+        double k3 = h / (1.0 + x_mid * x_mid);
+        
+        double x_end = x + h;
+        double k4 = h / (1.0 + x_end * x_end);
+
+        y += (k1 + 2*k2 + 2*k3 + k4) / 6.0;
+        x += h;
     }
-    
-    return y;
+
+    return sign * y;
 }
-double arcsin(double x) {
-    if (x < -1 || x > 1) return 0;
 
-    double x0 = 0.0, y = 0.0;
-    int steps = x >= 0 ? (int) (x / H): (int) (-x / H); 
-    double step_dir = (x >= 0) ? 1 : -1;
+double arcsin(double x_target) {
+    if (x_target < -1.0 || x_target > 1.0) return 0; 
 
-    for (int i = 0; i < steps; i++) {
-        double k1 = H * fast_inv_sqrt(1 - x0*x0);
-        double k2 = H * fast_inv_sqrt(1 - (x0 + step_dir*H/2)*(x0 + step_dir*H/2));
-        double k3 = H * fast_inv_sqrt(1 - (x0 + step_dir*H/2)*(x0 + step_dir*H/2));
-        double k4 = H * fast_inv_sqrt(1 - (x0 + step_dir*H)*(x0 + step_dir*H));
+    // handling error while division by 0
+    if (x_target >= 0.9999) return PI/2;  
+    if (x_target <= -0.9999) return -1*(PI/2);
 
-        y += step_dir * (k1 + 2*k2 + 2*k3 + k4) / 6;
-        x0 += step_dir * H;
+    double x = 0.0;
+    double y = 0.0;
+    double h = 0.01;
+    
+    int sign = 1;
+    if (x_target < 0) {
+        sign = -1;
+        x_target = -x_target;     }
+
+    
+    while (x < x_target) {
+        
+        if (x + h > x_target) {
+            h = x_target - x;
+        }
+
+        double k1 = h * fast_inv_sqrt(1 - x * x);
+        
+        double x_mid = x + h / 2.0;
+        double k2 = h * fast_inv_sqrt(1 - x_mid * x_mid);
+        double k3 = h * fast_inv_sqrt(1 - x_mid * x_mid);
+        double x_end = x + h;
+        double k4 = h * fast_inv_sqrt(1 - x_end * x_end);
+       
+	y += (k1 + 2*k2 + 2*k3 + k4) / 6.0;
+        x += h;
     }
 
-    return y;
+    return sign * y;
 }
 
 double arccos(double x){
